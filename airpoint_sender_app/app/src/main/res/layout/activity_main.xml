@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- 카메라 미리보기 -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:keepScreenOn="true"
+        app:implementationMode="compatible" />
+
+
+    <!-- 카메라 전환 버튼 -->
+    <Button
+        android:id="@+id/switchCameraButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Switch Camera"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="16dp" />
+
+    <!-- WebSocket 주소 입력 필드 -->
+    <EditText
+        android:id="@+id/webSocketAddressEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="ws://192.168.0.2:8080"
+        android:inputType="textUri"
+        android:layout_margin="16dp" />
+
+    <!-- 연결 버튼 -->
+    <Button
+        android:id="@+id/connectButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="연결"
+        android:layout_below="@id/webSocketAddressEditText"
+        android:layout_marginTop="16dp"
+        android:layout_centerHorizontal="true" />
+</RelativeLayout>
