@@ -11,6 +11,14 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageFormat
+import android.graphics.YuvImage
+import androidx.camera.core.ImageProxy
+import com.google.mediapipe.framework.image.BitmapImageBuilder
+import com.google.mediapipe.framework.image.MPImage
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.commons.io.output.ByteArrayOutputStream
 
 class CameraXHelper(
     private val context: Context,
@@ -27,33 +35,24 @@ class CameraXHelper(
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
-
-            // 프리뷰 설정
-            val preview = Preview.Builder().build().also { previewUseCase ->
-                previewUseCase.surfaceProvider = previewView.surfaceProvider  // 대체 API
+            val preview = Preview.Builder().build().also {
+                it.surfaceProvider = previewView.surfaceProvider
             }
 
-
-            // ImageAnalysis 설정 및 콜백 연결
             val imageAnalysis = ImageAnalysis.Builder()
                 .setResolutionSelector(
                     ResolutionSelector.Builder()
                         .setResolutionStrategy(
-                            ResolutionStrategy(
-                                Size(1280, 720),  // 원하는 해상도
-                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER  // 설정한 해상도보다 낮은 해상도로 fallback
-                            )
+                            ResolutionStrategy(Size(1280, 720), ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER)
                         )
                         .build()
                 )
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build().apply {
                     setAnalyzer(cameraExecutor) { imageProxy ->
-                        onFrameAnalyzed(imageProxy)  // 콜백 함수 호출
-                        imageProxy.close()  // 리소스 해제
+                        onFrameAnalyzed(imageProxy)
                     }
                 }
-
 
             try {
                 cameraProvider.unbindAll()
@@ -73,14 +72,43 @@ class CameraXHelper(
 
     fun switchCamera() {
         cameraSelector = if (cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA) {
-            CameraSelector.DEFAULT_BACK_CAMERA  // 후면 카메라
+            CameraSelector.DEFAULT_BACK_CAMERA
         } else {
-            CameraSelector.DEFAULT_FRONT_CAMERA  // 전면 카메라
+            CameraSelector.DEFAULT_FRONT_CAMERA
         }
-        startCamera()  // 카메라 전환 후 다시 시작
+        startCamera()
     }
 
     fun stopCamera() {
-        cameraExecutor.shutdown()  // 백그라운드 스레드 종료
+        cameraExecutor.shutdown()
+    }
+
+    // **ImageProxy를 Bitmap으로 변환**
+    private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
+        val yBuffer = imageProxy.planes[0].buffer
+        val uBuffer = imageProxy.planes[1].buffer
+        val vBuffer = imageProxy.planes[2].buffer
+
+        val ySize = yBuffer.remaining()
+        val uSize = uBuffer.remaining()
+        val vSize = vBuffer.remaining()
+
+        val nv21 = ByteArray(ySize + uSize + vSize)
+
+        yBuffer.get(nv21, 0, ySize)
+        vBuffer.get(nv21, ySize, vSize)
+        uBuffer.get(nv21, ySize + vSize, uSize)
+
+        val yuvImage = YuvImage(nv21, ImageFormat.NV21, imageProxy.width, imageProxy.height, null)
+        val out = ByteArrayOutputStream()
+        yuvImage.compressToJpeg(android.graphics.Rect(0, 0, yuvImage.width, yuvImage.height), 100, out)
+        val imageBytes = out.toByteArray()
+        return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+    }
+
+    // **Bitmap을 MPImage로 변환**
+    fun imageProxyToMPImage(imageProxy: ImageProxy): MPImage? {
+        val bitmap = imageProxyToBitmap(imageProxy)
+        return bitmap?.let { BitmapImageBuilder(it).build() }
     }
 }

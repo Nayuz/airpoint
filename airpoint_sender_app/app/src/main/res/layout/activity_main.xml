@@ -13,42 +13,54 @@
         android:keepScreenOn="true"
         app:implementationMode="compatible" />
 
+    <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:layout_marginTop="16dp">
 
+    <!-- tcpSocket 주소 입력 필드 -->
+        <EditText
+            android:id="@+id/tcpSocketAddressEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:autofillHints="192.168.0.111:25565"
+            android:hint="192.168.0.2:8080"
+            android:inputType="textUri"
+            android:layout_margin="16dp" />
+
+        <!-- 연결 버튼 -->
+        <Button
+            android:id="@+id/connectButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="연결"
+            android:layout_marginTop="16dp" />
+
+    </LinearLayout>
     <!-- 카메라 전환 버튼 -->
-    <Button
-        android:id="@+id/switchCameraButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Switch Camera"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="16dp" />
-
-    <!-- WebSocket 주소 입력 필드 -->
-    <EditText
-        android:id="@+id/webSocketAddressEditText"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="ws://192.168.0.2:8080"
-        android:inputType="textUri"
-        android:layout_margin="16dp" />
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="16dp">
 
-    <!-- 연결 버튼 -->
-    <Button
-        android:id="@+id/connectButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="연결"
-        android:layout_below="@id/webSocketAddressEditText"
-        android:layout_marginTop="16dp"
-        android:layout_centerHorizontal="true" />
+        <Button
+            android:id="@+id/switchCameraButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Switch Camera"
+            android:layout_marginBottom="16dp" />
 
-    <Button
-        android:id="@+id/sendButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/connectButton"
-        android:text="데이터 전송"
-        android:layout_marginTop="16dp"
-        android:layout_centerHorizontal="true" />
+        <!-- 화면 전환 버튼 -->
+        <Button
+            android:id="@+id/switchOrientationButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="전환"
+            android:layout_marginTop="16dp" />
+    </LinearLayout>
+
 </RelativeLayout>

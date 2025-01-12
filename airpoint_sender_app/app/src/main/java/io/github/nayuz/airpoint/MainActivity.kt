@@ -4,10 +4,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.ImageFormat
-import android.graphics.YuvImage
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -17,11 +13,8 @@ import android.view.WindowInsetsController
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.ImageProxy
-import com.google.firebase.crashlytics.buildtools.reloc.org.apache.commons.io.output.ByteArrayOutputStream
-import com.google.mediapipe.framework.image.BitmapImageBuilder
-import com.google.mediapipe.framework.image.MPImage
 import io.github.nayuz.airpoint.camera.CameraXHelper
+import io.github.nayuz.airpoint.camera.OrientationHelper
 import io.github.nayuz.airpoint.databinding.ActivityMainBinding
 
 
@@ -30,12 +23,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var cameraXHelper: CameraXHelper
     private lateinit var permissionHelper: PermissionHelper
-    private lateinit var handTrackerHelper : HandTrackerHelper  // 손 인식 클래스 초기화
+    private lateinit var handTrackerHelper : HandTrackerHelper
+    private lateinit var orientationHelper: OrientationHelper
     //tcp 연결 요소
-    private lateinit var webConnectHelper: WebConnectHelper
+    private lateinit var tcpConnectHelper: TcpConnectHelper
     private lateinit var tcpAddressEditText: EditText
     private lateinit var connectTcpButton: Button
-    private lateinit var sendButton: Button
+    private lateinit var switchOrientationButton : Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,14 +40,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // TCP 연결 UI 요소 초기화
-        webConnectHelper = WebConnectHelper()
-        tcpAddressEditText = findViewById(R.id.webSocketAddressEditText)
+        tcpAddressEditText = findViewById(R.id.tcpSocketAddressEditText)
         connectTcpButton = findViewById(R.id.connectButton)
-        sendButton = findViewById(R.id.sendButton)
-
+        tcpConnectHelper = TcpConnectHelper(this,binding.tcpSocketAddressEditText, binding.connectButton)
 
         permissionHelper = PermissionHelper(this)
-        handTrackerHelper = HandTrackerHelper(this, webConnectHelper)
+        handTrackerHelper = HandTrackerHelper(this, tcpConnectHelper)
 
 
         // 전체화면 설정
@@ -62,16 +54,23 @@ class MainActivity : AppCompatActivity() {
 
         // CameraXHelper 초기화
         cameraXHelper = CameraXHelper(this, binding.previewView) { imageProxy ->
-            val mpImage = imageProxyToMPImage(imageProxy)
-
-
+            val mpImage = cameraXHelper.imageProxyToMPImage(imageProxy)  // CameraXHelper의 함수 호출
             mpImage?.let {
-                val timestampMs = imageProxy.imageInfo.timestamp / 1000L  // 타임스탬프 계산
-                handTrackerHelper.detectHands(mpImage, timestampMs)  // 프레임과 타임스탬프 전달
+                val timestampMs = imageProxy.imageInfo.timestamp / 1000L
+                handTrackerHelper.detectHands(mpImage, timestampMs)
             }
-            imageProxy.close()  // 리소스 해제
+            imageProxy.close()
         }
 
+        orientationHelper = OrientationHelper(this)
+        // 버튼 초기화
+        switchOrientationButton = findViewById(R.id.switchOrientationButton)  // 버튼 초기화 추가
+        // 화면 전환 버튼 가시성 업데이트
+        orientationHelper.updateOrientationButtonVisibility(switchOrientationButton)
+        // 화면 전환 버튼 리스너 설정
+        binding.switchOrientationButton.setOnClickListener {
+            orientationHelper.switchScreenOrientation()
+        }
         cameraXHelper.startCamera()
 
         //카메라 전환 버튼
@@ -87,21 +86,19 @@ class MainActivity : AppCompatActivity() {
                 val port = address[1].toInt()
 
                 CoroutineScope(Dispatchers.Main).launch {
-                    webConnectHelper.connectTcpServer(ip, port)
+                    tcpConnectHelper.connectTcpServer(ip, port)
                     Toast.makeText(this@MainActivity, "TCP 서버 연결 시도 중: $ip:$port", Toast.LENGTH_SHORT).show()
                 }
             } else {
                 Toast.makeText(this, "올바른 TCP 주소를 입력하세요 (예: 192.168.0.2:8080)", Toast.LENGTH_SHORT).show()
             }
         }
-
-
     }
 
     override fun onDestroy() {
         super.onDestroy()
         cameraXHelper.stopCamera()  // 카메라 종료
-        webConnectHelper.closeConnection()
+        tcpConnectHelper.closeConnection()
     }
 
 
@@ -124,50 +121,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun startCamera() {
-        cameraXHelper.startCamera()
-    }
-
-    private fun imageProxyToMPImage(imageProxy: ImageProxy): MPImage? {
-        val bitmap = imageProxyToBitmap(imageProxy)
-        return bitmap?.let { BitmapImageBuilder(it).build() }
-    }
-
-    private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
-        val yBuffer = imageProxy.planes[0].buffer  // Y plane
-        val uBuffer = imageProxy.planes[1].buffer  // U plane
-        val vBuffer = imageProxy.planes[2].buffer  // V plane
-
-        val ySize = yBuffer.remaining()
-        val uSize = uBuffer.remaining()
-        val vSize = vBuffer.remaining()
-
-        val nv21 = ByteArray(ySize + uSize + vSize)
-
-        // YUV_420_888 to NV21 format
-        yBuffer.get(nv21, 0, ySize)
-        vBuffer.get(nv21, ySize, vSize)
-        uBuffer.get(nv21, ySize + vSize, uSize)
-
-        val yuvImage = YuvImage(nv21, ImageFormat.NV21, imageProxy.width, imageProxy.height, null)
-        val out = ByteArrayOutputStream()
-        yuvImage.compressToJpeg(android.graphics.Rect(0, 0, yuvImage.width, yuvImage.height), 100, out)
-        val imageBytes = out.toByteArray()
-        return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-    }
-
-
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         permissionHelper.handlePermissionResult(
             requestCode,
             grantResults,
             onGranted = {
-                startCamera()  // 카메라 권한 허용 시 카메라 실행
+                cameraXHelper.startCamera()  // 카메라 권한 허용 시 카메라 실행
             },
             onDenied = {
                 Toast.makeText(this, "카메라 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
             }
         )
+    }
+    override fun onResume() {
+        super.onResume()
+        orientationHelper.updateOrientationButtonVisibility(switchOrientationButton)
     }
 }
