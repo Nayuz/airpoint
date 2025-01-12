@@ -1,5 +1,6 @@
 package io.github.nayuz.airpoint
 
+import android.app.Activity
 import kotlin.math.pow
 import kotlin.math.sqrt
 import android.content.Context
@@ -15,11 +16,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import android.view.Surface
+import android.content.res.Configuration
+import android.os.Build
+import androidx.annotation.RequiresApi
 
 
 class HandTrackerHelper(context: Context, private val tcpConnectHelper: TcpConnectHelper) {
     private val handLandmarker: HandLandmarker
-
     init {
         val baseOptions = BaseOptions.builder()
             .setModelAssetPath("hand_landmarker.task")  // 모델 파일 이름
@@ -30,7 +34,7 @@ class HandTrackerHelper(context: Context, private val tcpConnectHelper: TcpConne
             .setRunningMode(RunningMode.LIVE_STREAM)  // 라이브 스트림 모드
             .setNumHands(2) // 인식할 손 개수
             .setResultListener { result: HandLandmarkerResult, _: MPImage ->
-                handleResult(result)  // 손 인식 결과 처리 함수 호출
+                handleResult(result, context)  // 손 인식 결과 처리 함수 호출
             }
             .build()
 
@@ -39,7 +43,7 @@ class HandTrackerHelper(context: Context, private val tcpConnectHelper: TcpConne
     }
 
     // 손 인식 결과 처리
-    private fun handleResult(result: HandLandmarkerResult) {
+    private fun handleResult(result: HandLandmarkerResult, context:Context) {
         val jsonData = JSONObject()
         if (result.handednesses().size == 2){
             var leftHand : List<NormalizedLandmark> = emptyList()
@@ -73,9 +77,11 @@ class HandTrackerHelper(context: Context, private val tcpConnectHelper: TcpConne
                     }
                 }
             }
-            pointedPos.put(rightHand[8].x())
-            pointedPos.put(rightHand[8].y())
-            jsonData.put("mode",lefthandStatus)
+            // 좌표 보정
+            val (adjustedX, adjustedY) = adjustCoordinates(rightHand[8], context)
+            pointedPos.put(adjustedX)
+            pointedPos.put(adjustedY)
+            jsonData.put("mode", lefthandStatus)
             jsonData.put("pos", pointedPos)
         }
         // **손 인식 JSON 데이터를 TCP로 전송**
@@ -109,5 +115,37 @@ class HandTrackerHelper(context: Context, private val tcpConnectHelper: TcpConne
 
     fun detectHands(mpImage: MPImage, timestampMs: Long) {
         handLandmarker.detectAsync(mpImage, timestampMs)  // 비동기 호출
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun adjustCoordinates(landmark: NormalizedLandmark, context: Context): Pair<Float, Float> {
+        val rotation = (context as Activity).display.rotation
+
+        var adjustedX = landmark.x()
+        var adjustedY = landmark.y()
+
+        when (rotation) {
+            Surface.ROTATION_0 -> {
+                // 기본 세로 모드
+            }
+            Surface.ROTATION_90 -> {
+                // 왼쪽으로 90도 회전된 가로 모드
+                adjustedX = 1.0f - landmark.y()  // x 좌표는 y를 뒤집어 대체
+                adjustedY = landmark.x()
+            }
+            Surface.ROTATION_270 -> {
+                // 오른쪽으로 270도 회전된 가로 모드
+                adjustedX = landmark.y()
+                adjustedY = 1.0f - landmark.x()  // y 좌표는 x를 뒤집어 대체
+            }
+            Surface.ROTATION_180 -> {
+                // 180도 뒤집힌 세로 모드
+                adjustedX = 1.0f - landmark.x()
+                adjustedY = 1.0f - landmark.y()
+            }
+        }
+
+        return Pair(adjustedX, adjustedY)
     }
 }
