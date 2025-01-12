@@ -1,12 +1,15 @@
 package io.github.nayuz.airpoint
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.graphics.YuvImage
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.Toast
 import android.view.WindowInsets
@@ -28,10 +31,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cameraXHelper: CameraXHelper
     private lateinit var permissionHelper: PermissionHelper
     private lateinit var handTrackerHelper : HandTrackerHelper  // 손 인식 클래스 초기화
-
+    //tcp 연결 요소
     private lateinit var webConnectHelper: WebConnectHelper
-    private lateinit var webSocketAddressEditText: EditText
-    private lateinit var connectButton: Button
+    private lateinit var tcpAddressEditText: EditText
+    private lateinit var connectTcpButton: Button
+    private lateinit var sendButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,8 +45,17 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // TCP 연결 UI 요소 초기화
+        webConnectHelper = WebConnectHelper()
+        tcpAddressEditText = findViewById(R.id.webSocketAddressEditText)
+        connectTcpButton = findViewById(R.id.connectButton)
+        sendButton = findViewById(R.id.sendButton)
+
+
         permissionHelper = PermissionHelper(this)
-        handTrackerHelper = HandTrackerHelper(this)
+        handTrackerHelper = HandTrackerHelper(this, webConnectHelper)
+
+
         // 전체화면 설정
         hideSystemBars()
 
@@ -66,28 +79,29 @@ class MainActivity : AppCompatActivity() {
             cameraXHelper.switchCamera()
         }
 
+        // TCP 연결 버튼 클릭 리스너
+        connectTcpButton.setOnClickListener {
+            val address = tcpAddressEditText.text.toString().split(":")
+            if (address.size == 2) {
+                val ip = address[0]
+                val port = address[1].toInt()
 
-        // UI 요소 초기화
-        webSocketAddressEditText = findViewById(R.id.webSocketAddressEditText)
-        connectButton = findViewById(R.id.connectButton)
-        webConnectHelper = WebConnectHelper()
-
-        // 연결 버튼 클릭 리스너
-        connectButton.setOnClickListener {
-            val address = webSocketAddressEditText.text.toString().trim()
-            if (address.isNotEmpty() && address.startsWith("ws://")) {
-                webConnectHelper.connectWebSocket(address)  // 입력한 주소로 연결
-                Toast.makeText(this, "WebSocket 연결 시도 중: $address", Toast.LENGTH_SHORT).show()
+                CoroutineScope(Dispatchers.Main).launch {
+                    webConnectHelper.connectTcpServer(ip, port)
+                    Toast.makeText(this@MainActivity, "TCP 서버 연결 시도 중: $ip:$port", Toast.LENGTH_SHORT).show()
+                }
             } else {
-                Toast.makeText(this, "올바른 WebSocket 주소를 입력하세요.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "올바른 TCP 주소를 입력하세요 (예: 192.168.0.2:8080)", Toast.LENGTH_SHORT).show()
             }
         }
+
+
     }
 
     override fun onDestroy() {
         super.onDestroy()
         cameraXHelper.stopCamera()  // 카메라 종료
-        webConnectHelper.closeConnection() //연결 종료
+        webConnectHelper.closeConnection()
     }
 
 

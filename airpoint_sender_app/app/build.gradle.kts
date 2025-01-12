@@ -81,6 +81,4 @@ dependencies {
     implementation(libs.androidx.camera.view.v130)
     implementation(libs.androidx.camera.extensions)
 
-    //web
-    implementation("com.squareup.okhttp3:okhttp:4.9.3")
 }

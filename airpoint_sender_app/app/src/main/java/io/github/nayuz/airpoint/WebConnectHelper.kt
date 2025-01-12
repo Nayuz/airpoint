@@ -1,42 +1,58 @@
 package io.github.nayuz.airpoint
 
 import android.util.Log
-import okhttp3.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.DataInputStream
+import java.io.DataOutputStream
+import java.net.Socket
 
-val client = OkHttpClient()
 class WebConnectHelper {
 
-    private val client = OkHttpClient()
-    private var webSocket: WebSocket? = null
+    private var socket: Socket? = null
+    private var outputStream: DataOutputStream? = null
+    private var inputStream: DataInputStream? = null
 
-    fun connectWebSocket(url: String) {
-        val request = Request.Builder().url(url).build()
-        webSocket = client.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.d("WebSocket", "연결 성공!")
+    // TCP 연결 설정
+    suspend fun connectTcpServer(address: String, port: Int) {
+        try {
+            withContext(Dispatchers.IO) {
+                socket = Socket(address, port)  // 서버에 연결
+                outputStream = DataOutputStream(socket?.getOutputStream())
+                inputStream = DataInputStream(socket?.getInputStream())
+                Log.d("WebConnectHelper", "TCP 서버 연결 성공: $address:$port")
             }
-
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                Log.d("WebSocket", "서버 메시지: $text")
-            }
-
-            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                Log.d("WebSocket", "연결 닫힘: $reason")
-                webSocket.close(1000, null)
-            }
-
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.e("WebSocket", "연결 실패: ${t.message}")
-            }
-        })
+        } catch (e: Exception) {
+            Log.e("WebConnectHelper", "TCP 서버 연결 실패: ${e.message}")
+        }
     }
 
-    fun sendMessage(message: String) {
-        webSocket?.send(message) ?: Log.e("WebSocket", "WebSocket 연결이 설정되지 않았습니다.")
+    // 데이터 전송
+    suspend fun sendData(data: String) {
+        try {
+            withContext(Dispatchers.IO) {
+                val jsonBytes = data.toByteArray(Charsets.UTF_8)
+                val formattedLength = "%10d".format(jsonBytes.size)  // 노란 줄 제거된 방식
+                outputStream?.write(formattedLength.toByteArray(Charsets.UTF_8))
+                outputStream?.write(jsonBytes)
+                outputStream?.flush()
+                Log.d("WebConnectHelper", "데이터 전송: $data")
+            }
+        } catch (e: Exception) {
+            Log.e("WebConnectHelper", "데이터 전송 실패: ${e.message}")
+        }
     }
 
+
+    // 연결 종료
     fun closeConnection() {
-        webSocket?.close(1000, "연결 종료")
-        webSocket = null
+        try {
+            socket?.close()
+            outputStream?.close()
+            inputStream?.close()
+            Log.d("WebConnectHelper", "TCP 연결 종료")
+        } catch (e: Exception) {
+            Log.e("WebConnectHelper", "연결 종료 중 오류: ${e.message}")
+        }
     }
 }
