@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tcpConnectHelper: TcpConnectHelper
     private lateinit var tcpAddressEditText: EditText
     private lateinit var connectTcpButton: Button
-    private lateinit var switchOrientationButton : Button
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,14 +63,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         orientationHelper = OrientationHelper(this)
-        // 버튼 초기화
-        switchOrientationButton = findViewById(R.id.switchOrientationButton)  // 버튼 초기화 추가
-        // 화면 전환 버튼 가시성 업데이트
-        orientationHelper.updateOrientationButtonVisibility(switchOrientationButton)
-        // 화면 전환 버튼 리스너 설정
-        binding.switchOrientationButton.setOnClickListener {
-            orientationHelper.switchScreenOrientation()
-        }
+
         cameraXHelper.startCamera()
 
         //카메라 전환 버튼
@@ -133,9 +126,5 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "카메라 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
             }
         )
-    }
-    override fun onResume() {
-        super.onResume()
-        orientationHelper.updateOrientationButtonVisibility(switchOrientationButton)
     }
 }
