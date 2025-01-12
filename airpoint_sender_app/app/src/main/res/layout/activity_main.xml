@@ -55,13 +55,6 @@
             android:text="카메라 전환"
             android:layout_margin="8dp" />
 
-        <Button
-            android:id="@+id/switchOrientationButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="화면 방향 전환"
-            android:layout_margin="8dp" />
     </LinearLayout>
 
 </RelativeLayout>

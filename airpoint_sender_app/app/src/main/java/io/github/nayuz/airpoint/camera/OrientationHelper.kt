@@ -16,11 +16,6 @@ class OrientationHelper(private val activity: Activity) {
         ) == 1
     }
 
-    // 화면 전환 버튼을 자동 회전 설정에 따라 숨기기 또는 보이기
-    fun updateOrientationButtonVisibility(button: Button) {
-        button.visibility = if (isAutoRotationEnabled()) View.GONE else View.VISIBLE
-    }
-
 
     fun switchScreenOrientation() {
         activity.requestedOrientation = if (activity.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
