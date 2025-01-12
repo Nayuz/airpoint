@@ -17,7 +17,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 
-class HandTrackerHelper(context: Context, private val webConnectHelper: WebConnectHelper) {
+class HandTrackerHelper(context: Context, private val tcpConnectHelper: TcpConnectHelper) {
     private val handLandmarker: HandLandmarker
 
     init {
@@ -81,7 +81,7 @@ class HandTrackerHelper(context: Context, private val webConnectHelper: WebConne
         // **손 인식 JSON 데이터를 TCP로 전송**
         if(jsonData.length() != 0) {
             CoroutineScope(Dispatchers.IO).launch {
-                webConnectHelper.sendData(jsonData.toString())
+                tcpConnectHelper.sendData(jsonData.toString())
             }
         }
     }
