@@ -11,8 +11,7 @@ class motionData:
     
 
     def motionDetect(self, prevData):
-        if (prevData is not None):
-            print(prevData.mode)
+        if (type(prevData) is motionData):
             print(self.mode)
             if (prevData.mode == 3 and self.mode == 3):
                 change_x = self.pos[0] - prevData.pos[0]
