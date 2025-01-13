@@ -22,24 +22,27 @@ def detect_left_hand_mode(landmarks):
 
     def is_finger_open(tip, mcp):
         return 1 if landmark_distance(tip, wrist) - landmark_distance(mcp, wrist) > 0 else 0
+    def is_finger_open_thumb(tip, mcp, pinky_mcp):
+        return 1 if landmark_distance(tip, pinky_mcp) - landmark_distance(mcp, pinky_mcp) > 0 else 0
 
     fingers_open = [
+        is_finger_open_thumb(thumb_tip, landmarks[mp_hands.HandLandmark.THUMB_MCP], landmarks[mp_hands.HandLandmark.PINKY_MCP]),
         is_finger_open(index_tip, landmarks[mp_hands.HandLandmark.INDEX_FINGER_MCP]),
         is_finger_open(middle_tip, landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_MCP]),
         is_finger_open(ring_tip, landmarks[mp_hands.HandLandmark.RING_FINGER_MCP]),
         is_finger_open(pinky_tip, landmarks[mp_hands.HandLandmark.PINKY_MCP])
     ]
-
-    if fingers_open[0] and not any(fingers_open[1:]):
-        return "draw"
-    elif fingers_open[0] and fingers_open[1] and not any(fingers_open[2:]):
-        return "erase"
-    elif fingers_open[0] and fingers_open[1] and fingers_open[2] and not fingers_open[3]:
-        return "slide"
-    elif all(fingers_open):
-        return "none"
+    print(fingers_open)
+    if fingers_open[1] and not any(fingers_open[2:]):
+        return "draw"  # 검지만 열려 있을 때
+    elif fingers_open[1] and fingers_open[2] and not fingers_open[3] and not fingers_open[4] and not fingers_open[0]:
+        return "erase"  # 검지와 중지 열림, 나머지는 닫힘
+    elif fingers_open[1] and fingers_open[2] and fingers_open[3] and not fingers_open[4] and not fingers_open[0]:
+        return "slide"  # 검지, 중지, 약지가 열림, 새끼와 엄지는 닫힘
+    elif fingers_open[0] and not any(fingers_open[1:]):
+        return "set_scale"  # 엄지만 열려 있을 때
     elif not any(fingers_open):
-        return "none"
+        return "none"  # 모든 손가락이 닫힘
     else:
         return "none"
 
@@ -63,6 +66,8 @@ def twohand_landmarks_to_json(results):
             mode = detect_left_hand_mode(leftHand.landmark)
             pos = process_right_hand(rightHand)
             json_data = {"mode":mode, "pos":pos}
+            if mode == "set_scale":
+                json_data["pos2"] = [leftHand.landmark[mp_hands.HandLandmark.THUMB_TIP].x, leftHand.landmark[mp_hands.HandLandmark.THUMB_TIP].y]
             json_data = json.dumps(json_data)
             print(json_data)
             return json_data

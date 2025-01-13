@@ -13,6 +13,11 @@ class drawing_app(QWidget):
     current_data = None
     prev_data = None
 
+    scale_pos_x_start = 0
+    scale_pos_y_start = 0
+    scale_x = 1
+    scale_y = 1
+
     def __init__(self, width, height):
         super().__init__()
         self.setWindowTitle('Transparent Drawing')
@@ -29,6 +34,8 @@ class drawing_app(QWidget):
 
         self.width = width
         self.height = height
+        self.scale_x_end = width
+        self.scale_y_end = height
 
     def toggle_drawing(self):
         self.drawing_enabled = not self.drawing_enabled
@@ -66,11 +73,11 @@ class drawing_app(QWidget):
 
     def drawingapp_interaction(self, drawing_app, jsondata):
         mode = jsondata['mode']
-        current_x = int(jsondata["pos"][0] * drawing_app.width)
-        current_y = int(jsondata["pos"][1] * drawing_app.height)
+        current_x = int((jsondata["pos"][0] - self.scale_pos_x_start) * drawing_app.width * self.scale_x)
+        current_y = int((jsondata["pos"][1] - self.scale_pos_y_start) * drawing_app.height * self.scale_y)
         if self.prev_data != None:
-            prev_x = int(self.prev_data["pos"][0] * drawing_app.width)
-            prev_y = int(self.prev_data["pos"][1] * drawing_app.height)
+            prev_x = int((self.prev_data["pos"][0] - self.scale_pos_x_start ) * drawing_app.width * self.scale_x)
+            prev_y = int((self.prev_data["pos"][1] - self.scale_pos_y_start ) * drawing_app.height * self.scale_y)
             if mode =="draw":
                 drawing_app.add_line(QPoint(prev_x, prev_y), QPoint(current_x, current_y))
             elif mode == "erase":
@@ -113,6 +120,17 @@ class drawing_app(QWidget):
                             pyautogui.hotkey('left')
                             print("Slide Backward")
                         drawing_app.last_slide_time = current_time
+            
+            elif mode == "set_scale":
+                start_x1 = jsondata['pos'][0]
+                start_y1 = jsondata['pos'][1]
+                start_x2 = jsondata['pos2'][0]
+                start_y2 = jsondata['pos2'][1]
+                self.scale_pos_x_start = start_x1 if start_x1<start_x2 else start_x2
+                self.scale_pos_y_start = start_y1 if start_y1<start_y2 else start_y2
+                self.scale_x = 1 / abs(start_x1 - start_x2)
+                self.scale_y = 1 / abs(start_y1 - start_y2)
+                print([ self.scale_x, self.scale_y ])
 
             elif mode == "none":
                 pass
