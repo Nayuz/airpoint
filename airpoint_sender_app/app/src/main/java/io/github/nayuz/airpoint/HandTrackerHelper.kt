@@ -1,10 +1,10 @@
 package io.github.nayuz.airpoint
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import kotlin.math.pow
 import kotlin.math.sqrt
 import android.content.Context
-import android.util.Log
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import com.google.mediapipe.framework.image.MPImage
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
@@ -17,7 +17,6 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import android.view.Surface
-import android.content.res.Configuration
 import android.os.Build
 import androidx.annotation.RequiresApi
 
@@ -43,6 +42,7 @@ class HandTrackerHelper(context: Context, private val tcpConnectHelper: TcpConne
     }
 
     // 손 인식 결과 처리
+    @SuppressLint("NewApi")
     private fun handleResult(result: HandLandmarkerResult, context:Context) {
         val jsonData = JSONObject()
         if (result.handednesses().size == 2){
@@ -59,23 +59,9 @@ class HandTrackerHelper(context: Context, private val tcpConnectHelper: TcpConne
                 }
             }
 
-            var lefthandStatus = 0
+            var lefthandStatus = ""
             if (leftHand.isNotEmpty()) {
                 lefthandStatus = drawingMode(leftHand)
-                when (lefthandStatus) {
-                    1 -> {
-                        Log.d("HandTrackerHelper", "mode 1")
-                    }
-                    2 -> {
-                        Log.d("HandTrackerHelper", "mode 2")
-                    }
-                    3 -> {
-                        Log.d("HandTrackerHelper", "mode 3")
-                    }
-                    else -> {
-                        Log.d("HandTrackerHelper", "mode 0")
-                    }
-                }
             }
             // 좌표 보정
             val (adjustedX, adjustedY) = adjustCoordinates(rightHand[8], context)
@@ -83,6 +69,13 @@ class HandTrackerHelper(context: Context, private val tcpConnectHelper: TcpConne
             pointedPos.put(adjustedY)
             jsonData.put("mode", lefthandStatus)
             jsonData.put("pos", pointedPos)
+            if (lefthandStatus == "set_scale"){
+                val pointedPos2 = JSONArray()
+                val (pos2X, pos2Y) = adjustCoordinates(leftHand[4], context)
+                pointedPos2.put(pos2X)
+                pointedPos2.put(pos2Y)
+                jsonData.put("pos2", pointedPos2)
+            }
         }
         // **손 인식 JSON 데이터를 TCP로 전송**
         if(jsonData.length() != 0) {
@@ -92,20 +85,23 @@ class HandTrackerHelper(context: Context, private val tcpConnectHelper: TcpConne
         }
     }
 
-    private fun drawingMode(hand : List<NormalizedLandmark>): Int {
+    private fun drawingMode(hand : List<NormalizedLandmark>): String {
         //음수면 접힌 상태.
+        val thumbDistance = landmarkDistance(hand[4], hand[17]) - landmarkDistance(hand[2], hand[17])
         val indexFingerDistance = landmarkDistance(hand[0],hand[8]) - landmarkDistance(hand[0], hand[5])
         val middleFingerDistance = landmarkDistance(hand[0],hand[12]) - landmarkDistance(hand[0], hand[9])
         val ringFingerDistance = landmarkDistance(hand[0],hand[16]) - landmarkDistance(hand[0], hand[13])
         val pinkyFingerDistance = landmarkDistance(hand[0],hand[20]) - landmarkDistance(hand[0], hand[17])
         return if (indexFingerDistance > 0 && middleFingerDistance < 0 && ringFingerDistance < 0 && pinkyFingerDistance < 0){
-            1
-        } else if (indexFingerDistance > 0 && middleFingerDistance > 0 && ringFingerDistance < 0 && pinkyFingerDistance < 0){
-            2
+            "draw"
+        } else if (indexFingerDistance > 0 && middleFingerDistance > 0 && ringFingerDistance < 0 && pinkyFingerDistance < 0) {
+            "erase"
+        } else if (thumbDistance > 0 && indexFingerDistance < 0 && middleFingerDistance < 0 && ringFingerDistance < 0 && pinkyFingerDistance < 0){
+            "set_scale"
         } else if (indexFingerDistance > 0 && middleFingerDistance > 0 && ringFingerDistance > 0 && pinkyFingerDistance < 0){
-            3
+            "slide"
         } else {
-            0
+            "None"
         }
     }
 
