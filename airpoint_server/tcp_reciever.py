@@ -1,7 +1,7 @@
 import socket
 import json
 import copy
-import motionDetect
+
 from PyQt5.QtCore import pyqtSignal, QObject
 
 class DataReceiver(QObject):
@@ -18,7 +18,7 @@ class DataReceiver(QObject):
             if data:
                 self.data_received.emit(data)  # 데이터를 전달
 
-
+                
 def receive_data(client_socket):
     BUFFER_SIZE = 1024  # 버퍼 크기
     data = b""  # 받은 데이터를 저장할 변수
@@ -64,22 +64,6 @@ def start_server(host='0.0.0.0', port=25565):
 
         print(f"수신된 데이터: {data}")
 
-        prevData = copy.deepcopy(currentData)
-        currentData = motionDetect.motionData(data)
-
-        # action 변수를 초기화
-        action = None  # action을 None으로 초기화하여 조건문에서 오류를 방지
-
-        if prevData is not None:
-            action = currentData.motionDetect(prevData)
-
-        if action is not None and not delay:
-            
-            print(f"동작: {action}")
-            delay = 100
-
-        if delay > 0:
-            delay -= 1
 
     client_socket.close()
     server_socket.close()
