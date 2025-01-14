@@ -1,0 +1,60 @@
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- 카메라 미리보기 -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:keepScreenOn="true"
+        app:implementationMode="compatible" />
+
+    <!-- TCP 주소 입력과 연결 버튼 -->
+    <LinearLayout
+        android:id="@+id/tcpLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="30dp"
+        android:layout_alignParentTop="true">
+
+        <EditText
+            android:id="@+id/tcpSocketAddressEditText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="192.168.0.2:8080"
+            android:inputType="textUri"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/connectButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="연결" />
+    </LinearLayout>
+
+    <!-- 카메라 전환 및 화면 방향 전환 버튼 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_below="@id/tcpLayout"
+        android:layout_marginTop="0dp">
+
+        <Button
+            android:id="@+id/switchCameraButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="카메라 전환"
+            android:layout_margin="8dp" />
+
+    </LinearLayout>
+
+</RelativeLayout>
