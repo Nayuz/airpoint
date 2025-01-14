@@ -81,22 +81,18 @@ class drawing_app(QWidget):
 
 
 
-    def drawingapp_interaction(self, drawing_app, jsondata):
+    def drawingapp_interaction(self, jsondata):
         mode = jsondata['mode']
-        current_x = int((jsondata["pos"][0] - self.scale_pos_x_start) * drawing_app.width * self.scale_x)
-        current_y = int((jsondata["pos"][1] - self.scale_pos_y_start) * drawing_app.height * self.scale_y)
+        current_x = int((jsondata["pos"][0] - self.scale_pos_x_start) * self.width * self.scale_x)
+        current_y = int((jsondata["pos"][1] - self.scale_pos_y_start) * self.height * self.scale_y)
 
-        # 손이 화면에서 벗어난 경우 처리
-        if not (0 <= current_x <= drawing_app.width and 0 <= current_y <= drawing_app.height):
-            print("Hand is out of bounds. Skipping drawing.")
-            return
 
         # 포인터 위치 업데이트 (모드와 상관없이 항상 적용)
-        pointer_x = int((jsondata["pos"][0] - self.scale_pos_x_start) * drawing_app.width * self.scale_x)
-        pointer_y = int((jsondata["pos"][1] - self.scale_pos_y_start) * drawing_app.height * self.scale_y)
+        pointer_x = int((jsondata["pos"][0] - self.scale_pos_x_start) * self.width * self.scale_x)
+        pointer_y = int((jsondata["pos"][1] - self.scale_pos_y_start) * self.height * self.scale_y)
 
-        if 0 <= pointer_x <= drawing_app.width and 0 <= pointer_y <= drawing_app.height:
-            drawing_app.set_pointer(QPoint(pointer_x, pointer_y))
+        if 0 <= pointer_x <= self.width and 0 <= pointer_y <= self.height:
+            self.set_pointer(QPoint(pointer_x, pointer_y))
         else:
             print("Pointer out of bounds.")
 
@@ -107,7 +103,19 @@ class drawing_app(QWidget):
             self.prev_smoothed_x = current_x
             self.prev_smoothed_y = current_y
 
-        if mode == "draw":
+        if mode == "set_scale":
+            start_x1 = jsondata['pos'][0]
+            start_y1 = jsondata['pos'][1]
+            start_x2 = jsondata['pos2'][0]
+            start_y2 = jsondata['pos2'][1]
+
+            self.scale_pos_x_start = min(start_x1, start_x2)
+            self.scale_pos_y_start = min(start_y1, start_y2)
+            self.scale_x = 1 / abs(start_x1 - start_x2)
+            self.scale_y = 1 / abs(start_y1 - start_y2)
+            print([self.scale_x, self.scale_y])
+        
+        elif mode == "draw":
             smoothing_factor = 0.2  # 필터 강도
 
             # 저역 통과 필터 적용
@@ -115,7 +123,7 @@ class drawing_app(QWidget):
             self.smoothed_y = smoothing_factor * current_y + (1 - smoothing_factor) * self.smoothed_y
 
             # 이전 보정된 좌표와 현재 보정된 좌표를 사용하여 선을 그림
-            drawing_app.add_line(
+            self.add_line(
                 QPoint(int(self.prev_smoothed_x), int(self.prev_smoothed_y)),
                 QPoint(int(self.smoothed_x), int(self.smoothed_y))
             )
@@ -125,11 +133,11 @@ class drawing_app(QWidget):
             self.prev_smoothed_y = self.smoothed_y
 
         elif mode == "erase":
-            if drawing_app.lines:  # 지울 선이 있는지 확인
+            if self.lines:  # 지울 선이 있는지 확인
                 eraser_size = 20  # 지우개 반경
                 new_lines = []
 
-                for line in drawing_app.lines:
+                for line in self.lines:
                     start, end, color = line
                     x1, y1 = start.x(), start.y()
                     x2, y2 = end.x(), end.y()
@@ -150,18 +158,18 @@ class drawing_app(QWidget):
                     if distance > eraser_size:
                         new_lines.append(line)
 
-                drawing_app.lines = new_lines
-                drawing_app.update()
+                self.lines = new_lines
+                self.update()
 
         elif mode == "slide":
             current_time = time.time()
-            print(f"Time since last slide action: {current_time - drawing_app.last_slide_time}")
+            print(f"Time since last slide action: {current_time - self.last_slide_time}")
 
-            if current_time - drawing_app.last_slide_time > drawing_app.slide_delay:
+            if current_time - self.last_slide_time > self.slide_delay:
                 if self.prev_data is not None:
                     print(f"Prev data: {self.prev_data['pos'][0]}")
-                    prev_x = int((self.prev_data["pos"][0] - self.scale_pos_x_start) * drawing_app.width * self.scale_x)
-                    prev_y = int((self.prev_data["pos"][1] - self.scale_pos_y_start) * drawing_app.height * self.scale_y)
+                    prev_x = int((self.prev_data["pos"][0] - self.scale_pos_x_start) * self.width * self.scale_x)
+                    prev_y = int((self.prev_data["pos"][1] - self.scale_pos_y_start) * self.height * self.scale_y)
 
                     movement = current_x - prev_x
                     print(f"Calculated movement: {movement}")
@@ -171,33 +179,21 @@ class drawing_app(QWidget):
                         print("Slide Forward")
 
                         # 슬라이드 동작 이후 선 삭제
-                        drawing_app.lines.clear()
-                        drawing_app.update()
-                        drawing_app.last_slide_time = current_time
+                        self.lines.clear()
+                        self.update()
+                        self.last_slide_time = current_time
 
                     elif movement > 30:  # 왼쪽 슬라이드
                         pyautogui.hotkey('left')
                         print("Slide Backward")
 
                         # 슬라이드 동작 이후 선 삭제
-                        drawing_app.lines.clear()
-                        drawing_app.update()
-                        drawing_app.last_slide_time = current_time
+                        self.lines.clear()
+                        self.update()
+                        self.last_slide_time = current_time
 
                     else:
                         print("No slide action detected.")
-
-        elif mode == "set_scale":
-            start_x1 = jsondata['pos'][0]
-            start_y1 = jsondata['pos'][1]
-            start_x2 = jsondata['pos2'][0]
-            start_y2 = jsondata['pos2'][1]
-
-            self.scale_pos_x_start = min(start_x1, start_x2)
-            self.scale_pos_y_start = min(start_y1, start_y2)
-            self.scale_x = 1 / abs(start_x1 - start_x2)
-            self.scale_y = 1 / abs(start_y1 - start_y2)
-            print([self.scale_x, self.scale_y])
 
         elif mode == "none":
             # none 모드에서 보정된 좌표와 이전 좌표 초기화

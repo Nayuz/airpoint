@@ -65,7 +65,7 @@ def main():
     drawing_app.show()
 
     server_thread = ServerThread(port)
-    server_thread.data_signal.connect(lambda data: drawing_app.drawingapp_interaction(drawing_app, data))
+    server_thread.data_signal.connect(lambda data: drawing_app.drawingapp_interaction(data))
     server_thread.start()
 
     main_window = MainWindow()
