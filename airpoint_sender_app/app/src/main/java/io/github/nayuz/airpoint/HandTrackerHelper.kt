@@ -117,9 +117,9 @@ class HandTrackerHelper(context: Context, private val tcpConnectHelper: TcpConne
     @RequiresApi(Build.VERSION_CODES.R)
     private fun adjustCoordinates(landmark: NormalizedLandmark, context: Context): Pair<Float, Float> {
         val rotation = (context as Activity).display.rotation
-
-        var adjustedX = landmark.x()
-        var adjustedY = landmark.y()
+        ///왠지 xy가 뒤집혀나오니 일단 뒤집어서 대입.
+        var adjustedX = 1.0f - landmark.y()
+        var adjustedY = 1.0f - landmark.x()
 
         when (rotation) {
             Surface.ROTATION_0 -> {
@@ -127,18 +127,18 @@ class HandTrackerHelper(context: Context, private val tcpConnectHelper: TcpConne
             }
             Surface.ROTATION_90 -> {
                 // 왼쪽으로 90도 회전된 가로 모드
-                adjustedX = 1.0f - landmark.y()  // x 좌표는 y를 뒤집어 대체
-                adjustedY = landmark.x()
+                adjustedX = 1.0f - landmark.x()  // x 좌표는 y를 뒤집어 대체
+                adjustedY = landmark.y()
             }
             Surface.ROTATION_270 -> {
                 // 오른쪽으로 270도 회전된 가로 모드
-                adjustedX = landmark.y()
-                adjustedY = 1.0f - landmark.x()  // y 좌표는 x를 뒤집어 대체
+                adjustedX = landmark.x()
+                adjustedY = 1.0f - landmark.y()  // y 좌표는 x를 뒤집어 대체
             }
             Surface.ROTATION_180 -> {
                 // 180도 뒤집힌 세로 모드
-                adjustedX = 1.0f - landmark.x()
-                adjustedY = 1.0f - landmark.y()
+                adjustedX = landmark.y()
+                adjustedY = landmark.x()
             }
         }
 
