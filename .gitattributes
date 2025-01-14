@@ -1,0 +1,2 @@
+*.exe filter=lfs diff=lfs merge=lfs -text
+exe_files/airpoint_sender.exe filter=lfs diff=lfs merge=lfs -text
