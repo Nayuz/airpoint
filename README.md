@@ -5,6 +5,11 @@
 airpoint는 공중에 점을 찍어 표시하겠다는 의미를 가진 프로그램입니다.
 
 ## 설치, 설정
+
+git을 통한 설치가 안 되는 경우
+https://drive.google.com/drive/folders/13W_9vGCIDhRIHI8c9FsVUODdhiC8bLPX?usp=sharing
+해당 링크에서 실행 파일을 받을 수 있습니다.
+
 사용자는 선을 그리거나 좌우키를 조작할 PC에
 exe_files 내부의 airpoint_server.exe 설치하고,
 
