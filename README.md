@@ -28,6 +28,10 @@ airpoint_sender.exe 또는 AirPoint 앱을 실행합니다.
 airpoint_sender.exe 또는 AirPoint 앱에
 airpoint_server.exe가 설치된 PC의 IP 주소와 지정한 포트 번호를 설정합니다.
 
+airpoint_sender와 airpoint_server가 같은 컴퓨터에 설치되어 사용될 경우,
+airpoint_sender.exe의 설정은 포트만 맞춰주면 됩니다.
+전부 기본값일 경우 값을 입력하지 않고 엔터만 쳐도 됩니다.
+
 ## 조작
 
 ### 왼손으로 조작 모드를 선택합니다.
