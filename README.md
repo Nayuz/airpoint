@@ -32,7 +32,7 @@ airpoint_sender와 airpoint_server가 같은 컴퓨터에 설치되어 사용될
 airpoint_sender.exe의 설정은 포트만 맞춰주면 됩니다.
 전부 기본값일 경우 값을 입력하지 않고 엔터만 쳐도 됩니다.
 
-##종료 방법
+## 종료 방법
 airpoint_sender는 캠 화면을 띄운 뒤 q 키를 누르면 종료됩니다.
 
 airpoint_server는 아무 창에서나 Ctrl+Q를 누르면 종료됩니다.
